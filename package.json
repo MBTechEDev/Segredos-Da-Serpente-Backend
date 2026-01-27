@@ -25,6 +25,7 @@
     "@medusajs/admin-sdk": "2.12.6",
     "@medusajs/cache-redis": "^2.13.1",
     "@medusajs/cli": "2.12.6",
+    "@medusajs/dashboard": "^2.13.1",
     "@medusajs/event-bus-redis": "^2.13.1",
     "@medusajs/framework": "2.12.6",
     "@medusajs/medusa": "2.12.6",

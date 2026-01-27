@@ -63,7 +63,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL);
   const storeModuleService = container.resolve(Modules.STORE);
 
-  const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  const countries = ["br"];
 
   logger.info("Seeding store data...");
   const [store] = await storeModuleService.listStores();
@@ -92,13 +92,14 @@ export default async function seedDemoData({ container }: ExecArgs) {
       store_id: store.id,
       supported_currencies: [
         {
-          currency_code: "eur",
+          currency_code: "brl",
           is_default: true,
         },
         {
           currency_code: "usd",
         },
       ],
+
     },
   });
 
@@ -115,9 +116,9 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       regions: [
         {
-          name: "Europe",
-          currency_code: "eur",
-          countries,
+          name: "Brasil",
+          currency_code: "brl",
+          countries: ["br"],
           payment_providers: ["pp_system_default"],
         },
       ],
@@ -142,11 +143,11 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       locations: [
         {
-          name: "European Warehouse",
+          name: "Armazém Brasil",
           address: {
-            city: "Copenhagen",
-            country_code: "DK",
-            address_1: "",
+            city: "São Paulo",
+            country_code: "BR",
+            address_1: "Rua Exemplo, 123",
           },
         },
       ],
@@ -194,38 +195,14 @@ export default async function seedDemoData({ container }: ExecArgs) {
   }
 
   const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
-    name: "European Warehouse delivery",
+    name: "Entrega Brasil",
     type: "shipping",
     service_zones: [
       {
-        name: "Europe",
+        name: "Brasil",
         geo_zones: [
           {
-            country_code: "gb",
-            type: "country",
-          },
-          {
-            country_code: "de",
-            type: "country",
-          },
-          {
-            country_code: "dk",
-            type: "country",
-          },
-          {
-            country_code: "se",
-            type: "country",
-          },
-          {
-            country_code: "fr",
-            type: "country",
-          },
-          {
-            country_code: "es",
-            type: "country",
-          },
-          {
-            country_code: "it",
+            country_code: "br",
             type: "country",
           },
         ],
@@ -261,8 +238,8 @@ export default async function seedDemoData({ container }: ExecArgs) {
             amount: 10,
           },
           {
-            currency_code: "eur",
-            amount: 10,
+            currency_code: "brl",
+            amount: 50,
           },
           {
             region_id: region.id,
@@ -299,8 +276,8 @@ export default async function seedDemoData({ container }: ExecArgs) {
             amount: 10,
           },
           {
-            currency_code: "eur",
-            amount: 10,
+            currency_code: "brl",
+            amount: 50,
           },
           {
             region_id: region.id,
