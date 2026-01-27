@@ -8,6 +8,7 @@ RUN apk add --no-cache python3 make g++
 
 # 2. Copia arquivos de configuração de dependências
 COPY package.json yarn.lock .yarnrc.yml* ./
+COPY .yarn ./.yarn
 
 # 3. Habilita o Corepack e FORÇA a criação da pasta node_modules (Essencial para Medusa)
 RUN corepack enable

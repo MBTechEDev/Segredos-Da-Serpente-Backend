@@ -1,0 +1,9 @@
+node_modules
+.git
+.env
+.medusa
+dist
+build
+coverage
+.vscode
+.idea
