@@ -2425,6 +2425,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@medusajs/cache-redis@npm:^2.13.1":
+  version: 2.13.1
+  resolution: "@medusajs/cache-redis@npm:2.13.1"
+  dependencies:
+    ioredis: "npm:^5.4.1"
+  peerDependencies:
+    "@medusajs/framework": 2.13.1
+  checksum: 10c0/2494259abbd6802944932ef556fb6cc6679ed6f3f3a51b3189dcd3613c2972c2ccf9d6a789ca1180d235f97d5439248be6fbfd79add2fe552aeb181000c75698
+  languageName: node
+  linkType: hard
+
 "@medusajs/caching-redis@npm:2.12.6":
   version: 2.12.6
   resolution: "@medusajs/caching-redis@npm:2.12.6"
@@ -2657,6 +2668,18 @@ __metadata:
   peerDependencies:
     "@medusajs/framework": 2.12.6
   checksum: 10c0/28a14669c6d0e0d0f5fafd988e5d288d7c6c225d1e660a7dccd4cfc6a4b7affc00a8a60cfb051ff54d0af1fc6186b061cd23d11a4fa2784e942df1e5cbbdb019
+  languageName: node
+  linkType: hard
+
+"@medusajs/event-bus-redis@npm:^2.13.1":
+  version: 2.13.1
+  resolution: "@medusajs/event-bus-redis@npm:2.13.1"
+  dependencies:
+    bullmq: "npm:5.13.0"
+    ioredis: "npm:^5.4.1"
+  peerDependencies:
+    "@medusajs/framework": 2.13.1
+  checksum: 10c0/80ebfb8bffbb1184fa360cac52754b935d26a92b23523c2aead665924be63d393b104611a44516bbc5615cbb5dd2c26cabebcd564e5b9679a831ad5fbf0b4ef0
   languageName: node
   linkType: hard
 
@@ -3235,6 +3258,19 @@ __metadata:
   peerDependencies:
     "@medusajs/framework": 2.12.6
   checksum: 10c0/40fff2ef821f73dad7edf57c83f490746b1afa7ed1218ec624f73fa87c0ae58380a55e8a3cc52adf611b763672dd021be246ff1474df6610bae808a2399bf795
+  languageName: node
+  linkType: hard
+
+"@medusajs/workflow-engine-redis@npm:^2.13.1":
+  version: 2.13.1
+  resolution: "@medusajs/workflow-engine-redis@npm:2.13.1"
+  dependencies:
+    bullmq: "npm:5.13.0"
+    ioredis: "npm:^5.4.1"
+    ulid: "npm:^2.3.0"
+  peerDependencies:
+    "@medusajs/framework": 2.13.1
+  checksum: 10c0/d12b6ed1c0010d96be3c3f6a5e9a80cd224bfb12fabc302981e47ab676e2bdee078f3d47f81f939472e1ee8934a4634b55f04a0e04747587128668f49df1bb58
   languageName: node
   linkType: hard
 
@@ -15154,10 +15190,13 @@ __metadata:
   resolution: "segredos-da-serpente@workspace:."
   dependencies:
     "@medusajs/admin-sdk": "npm:2.12.6"
+    "@medusajs/cache-redis": "npm:^2.13.1"
     "@medusajs/cli": "npm:2.12.6"
+    "@medusajs/event-bus-redis": "npm:^2.13.1"
     "@medusajs/framework": "npm:2.12.6"
     "@medusajs/medusa": "npm:2.12.6"
     "@medusajs/test-utils": "npm:2.12.6"
+    "@medusajs/workflow-engine-redis": "npm:^2.13.1"
     "@swc/core": "npm:^1.7.28"
     "@swc/jest": "npm:^0.2.36"
     "@types/jest": "npm:^29.5.13"
