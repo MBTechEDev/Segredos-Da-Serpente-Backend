@@ -1,4 +1,5 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { url } from 'inspector'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -6,7 +7,7 @@ module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
-    workerMode: process.env.MEDUSA_WORKER_MODE as "shared" | "worker" | "server" || "shared",
+    workerMode: process.env.MEDUSA_WORKER_MODE as "shared" | "worker" | "server",
     databaseDriverOptions: {
       ssl: false
     },
@@ -37,8 +38,10 @@ module.exports = defineConfig({
     {
       resolve: "@medusajs/medusa/workflow-engine-redis",
       options: {
-        redisUrl: process.env.REDIS_URL,
+        redis: {
+          url: process.env.REDIS_URL,
+        }
       },
-    },
+    }
   ]
 })
