@@ -42,6 +42,26 @@ module.exports = defineConfig({
           url: process.env.REDIS_URL,
         }
       },
-    }
+    },
+    {
+      resolve: "@medusajs/medusa/fulfillment",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/fulfillment-manual",
+            id: "manual",
+          },
+          {
+            resolve: "./src/modules/melhor-envio", // Caminho para o diretório do seu módulo
+            id: "melhor-envio",
+            options: {
+              api_token: process.env.MELHORENVIO_API_TOKEN,
+              sandbox: process.env.MELHORENVIO_SANDBOX === "true",
+              contact_email: process.env.MELHORENVIO_CONTACT_EMAIL,
+            },
+          },
+        ],
+      },
+    },
   ]
 })
