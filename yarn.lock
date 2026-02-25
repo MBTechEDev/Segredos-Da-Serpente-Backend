@@ -13193,6 +13193,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mercadopago@npm:^2.12.0":
+  version: 2.12.0
+  resolution: "mercadopago@npm:2.12.0"
+  dependencies:
+    node-fetch: "npm:^2.7.0"
+    uuid: "npm:^9.0.0"
+  checksum: 10c0/fd6a012d3692cf3e13704829600ad000af7cfcda147be25658380772f09ea51926d1cf335538ae3878e83b03d4cbb9ccb8558ec244dbf38476ebe9f92a2eb657
+  languageName: node
+  linkType: hard
+
 "merge-descriptors@npm:1.0.3":
   version: 1.0.3
   resolution: "merge-descriptors@npm:1.0.3"
@@ -15307,6 +15317,7 @@ __metadata:
     "@types/react": "npm:^18.3.2"
     "@types/react-dom": "npm:^18.2.25"
     jest: "npm:^29.7.0"
+    mercadopago: "npm:^2.12.0"
     prop-types: "npm:^15.8.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"

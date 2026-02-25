@@ -28,7 +28,6 @@ export class MelhorEnvioClient {
             }
         });
 
-        console.log(`✅ [Melhor Envio] Axios instanciado para: ${baseURL}`);
     }
 
     /**

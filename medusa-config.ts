@@ -1,5 +1,4 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
-import { url } from 'inspector'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -27,12 +26,22 @@ module.exports = defineConfig({
       resolve: "@medusajs/medusa/cache-redis",
       options: {
         redisUrl: process.env.REDIS_URL,
+        redisOptions: {
+          connectTimeout: 10000,
+          pingInterval: 10000,
+          keepAlive: 10000,
+        },
       },
     },
     {
       resolve: "@medusajs/medusa/event-bus-redis",
       options: {
         redisUrl: process.env.REDIS_URL,
+        redisOptions: {
+          connectTimeout: 10000,
+          pingInterval: 10000,
+          keepAlive: 10000,
+        },
       },
     },
     {
@@ -40,6 +49,11 @@ module.exports = defineConfig({
       options: {
         redis: {
           url: process.env.REDIS_URL,
+          options: {
+            connectTimeout: 10000,
+            pingInterval: 10000,
+            keepAlive: 10000,
+          },
         }
       },
     },
@@ -63,5 +77,22 @@ module.exports = defineConfig({
         ],
       },
     },
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "./src/providers/mercadopago",
+            id: "mercadopago",
+            options: {
+              accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+              publicKey: process.env.MERCADOPAGO_PUBLIC_KEY,
+              webhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+            }
+          }
+        ]
+      }
+
+    }
   ]
 })
