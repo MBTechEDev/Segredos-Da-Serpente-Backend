@@ -28,9 +28,9 @@ export const POST = async (
             }
 
             const queryData = req.query as any
-            const dataID = queryData['data.id'] || (req.body as any)?.data?.id
+            const dataID = (queryData['data.id'] || (req.body as any)?.data?.id || "").toLowerCase()
 
-            const manifest = `id:${dataID};request-id:${requestId};ts:${ts}`
+            const manifest = `id:${dataID};request-id:${requestId};ts:${ts};`
             const hmac = crypto.createHmac('sha256', webhookSecret)
             hmac.update(manifest)
             const digest = hmac.digest('hex')
@@ -40,8 +40,28 @@ export const POST = async (
             }
         }
 
-        // TODO: Aqui é possível despachar o evento de pagamento capturado via modules ou workflow do medusa. 
-        // Por ora, as regras determinam o envio imediato do status 200.
+        // Despachando evento para o fluxo Core do Medusa V2
+        try {
+            const paymentModule = req.scope.resolve("payment")
+            const { processPaymentWorkflow } = await import("@medusajs/core-flows")
+
+            const actionAndData = await paymentModule.getWebhookActionAndData({
+                provider: "mercadopago",
+                payload: {
+                    data: req.body as Record<string, unknown>,
+                    rawData: req.body as unknown as string | Buffer,
+                    headers: req.headers as any,
+                }
+            })
+
+            if (actionAndData.action !== "not_supported" && actionAndData.action !== "failed") {
+                await processPaymentWorkflow(req.scope).run({
+                    input: actionAndData as any
+                })
+            }
+        } catch (err) {
+            console.error("Error processing webhook in Medusa:", err)
+        }
 
         // Respondendo com 200 OK imediatamente (até 22 segundos)
         res.status(200).send("OK")

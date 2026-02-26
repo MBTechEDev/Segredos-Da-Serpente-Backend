@@ -45,6 +45,7 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
     protected mpClient: MercadoPagoConfig
     protected logger: Logger
     protected orderClient: Order
+    protected accessToken: string
 
     constructor(container: InjectedDependencies, options: Options) {
         super(container, options)
@@ -54,6 +55,7 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
             accessToken: options.accessToken,
         })
         this.orderClient = new Order(this.mpClient)
+        this.accessToken = options.accessToken
     }
 
     private formatAmount(amount: any): string {
@@ -62,10 +64,12 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
     }
 
     async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
+        const cartId = ((input.context as any)?.cart_id as string) || `mp_${Date.now()}`;
         return {
-            id: `mp_${Date.now()}`,
+            id: cartId,
             data: {
                 status: "pending",
+                session_id: cartId,
                 amount: input.amount
             }
         }
@@ -96,76 +100,142 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
 
             const paymentMethodConfig: any = {
                 id: isPix ? "pix" : paymentMethodId,
-                type: isPix ? "bank_transfer" : "credit_card",
             }
 
             if (!isPix) {
+                paymentMethodConfig.type = "credit_card"
                 paymentMethodConfig.token = token
                 paymentMethodConfig.installments = Number(data?.installments) || 1
+                if (data?.issuer_id) {
+                    paymentMethodConfig.issuer_id = String(data.issuer_id)
+                }
             }
 
             // Excluir propriedades sensíveis (Regra 5)
             const safeData = { ...data }
             delete safeData.token
             delete safeData.cvv
+            delete safeData.payer
 
             // Gerar X-Idempotency-Key
             const idempotencyKey = ((context as any)?.idempotency_key as string) || `mp_${cartId}_${Date.now()}`
 
-            const orderRequest = {
-                body: {
-                    type: "online",
-                    processing_mode: "automatic",
-                    external_reference: cartId,
-                    total_amount: totalAmountStr,
-                    payer: { email },
-                    transactions: {
-                        payments: [{
-                            amount: totalAmountStr,
-                            payment_method: paymentMethodConfig
-                        }]
+            const frontendPayer = data?.payer as any || {};
+            const customerEmail = frontendPayer.email || email;
+            const customerName = frontendPayer.first_name || (context as any)?.first_name || "Customer"
+            const customerLastName = frontendPayer.last_name || (context as any)?.last_name || "Test"
+            const identificationType = frontendPayer.identification?.type || "CPF"
+            const identificationNumber = frontendPayer.identification?.number || "12345678909"
+
+            const city = frontendPayer.address?.city || "São Paulo"
+            const state = frontendPayer.address?.state || "SP"
+            const zipCode = frontendPayer.address?.zip_code || "01000-000"
+
+            let paymentResponse: any = {}
+            let isOrder = false
+
+            if (isPix) {
+                // Pagamento de PIX vai direto pra API de Payments pois Orders API tem bugs de payload
+                const url = `https://api.mercadopago.com/v1/payments`
+                const pixResponse = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Idempotency-Key': idempotencyKey,
+                        'Authorization': `Bearer ${this.accessToken}`
                     },
-                    additional_info: {
-                        ip_address: (context as any)?.ip || undefined,
-                    },
-                    ...(deviceId && { device_id: deviceId })
-                },
-                requestOptions: {
-                    idempotencyKey: idempotencyKey
+                    body: JSON.stringify({
+                        transaction_amount: Number(totalAmountStr),
+                        payment_method_id: 'pix',
+                        payer: {
+                            email: customerEmail,
+                            first_name: customerName,
+                            last_name: customerLastName,
+                            identification: {
+                                type: identificationType,
+                                number: identificationNumber
+                            }
+                        },
+                        external_reference: cartId,
+                        description: "Pedido Medusa"
+                    })
+                })
+
+                if (!pixResponse.ok) {
+                    const errorResponse = await pixResponse.json().catch(() => ({}))
+                    this.logger.error(`[MercadoPago] Full Error in PIX Request: ${JSON.stringify(errorResponse)}`);
+                    throw new MedusaError(MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR, `Mercado Pago PIX Error`)
                 }
+
+                paymentResponse = await pixResponse.json()
+            } else {
+                // Cartões de Crédito vão pra API de Orders
+                isOrder = true
+                const orderRequest: any = {
+                    body: {
+                        type: "online",
+                        processing_mode: "automatic",
+                        capture_mode: "manual",
+                        external_reference: cartId,
+                        total_amount: totalAmountStr,
+                        payer: {
+                            email: customerEmail,
+                            first_name: customerName,
+                            last_name: customerLastName,
+                            identification: {
+                                type: identificationType,
+                                number: identificationNumber
+                            }
+                        },
+                        transactions: {
+                            payments: [{
+                                amount: totalAmountStr,
+                                payment_method: paymentMethodConfig
+                            }]
+                        }
+                    },
+                    requestOptions: {
+                        idempotencyKey: idempotencyKey
+                    }
+                }
+
+                const response = await this.orderClient.create(orderRequest)
+                paymentResponse = response.transactions?.payments?.[0]
+                paymentResponse.order_id = response.id
+                paymentResponse.order_status = response.status
             }
 
-            const response = await this.orderClient.create(orderRequest)
-            const payment = response.transactions?.payments?.[0]
-
-            if (payment?.status === "rejected") {
+            if (paymentResponse?.status === "rejected") {
                 throw new MedusaError(
                     MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR,
-                    `Mercado Pago: ${payment.status_detail}`
+                    `Mercado Pago: ${paymentResponse.status_detail}`
                 )
             }
 
             let medusaStatus = PaymentSessionStatus.PENDING
-            if (
-                payment?.status === "approved" ||
-                payment?.status === "pending" ||
-                payment?.status === "action_required"
-            ) {
+            const validPaymentStatuses = ["approved", "pending", "action_required", "in_process", "processed", "accredited"]
+            const validOrderStatuses = ["processed", "opened", "testing"]
+
+            if (paymentResponse?.status && validPaymentStatuses.includes(paymentResponse.status as string)) {
+                medusaStatus = PaymentSessionStatus.AUTHORIZED
+            } else if (isOrder && paymentResponse?.order_status && validOrderStatuses.includes(paymentResponse.order_status as string)) {
                 medusaStatus = PaymentSessionStatus.AUTHORIZED
             }
 
-            const transactionData = (payment as any)?.point_of_interaction?.transaction_data;
-            const qrCode = transactionData?.qr_code || payment?.payment_method?.qr_code
-            const qrCodeBase64 = transactionData?.qr_code_base64 || payment?.payment_method?.qr_code_base64
-            const ticketUrl = transactionData?.ticket_url || payment?.payment_method?.ticket_url
+            const transactionData = paymentResponse?.point_of_interaction?.transaction_data;
+            const qrCode = transactionData?.qr_code
+            const qrCodeBase64 = transactionData?.qr_code_base64
+            const ticketUrl = transactionData?.ticket_url
 
             return {
                 status: medusaStatus,
                 data: {
                     ...safeData,
-                    mp_order_id: response.id,
-                    mp_status: payment?.status,
-                    mp_status_detail: payment?.status_detail,
+                    session_id: cartId,
+                    mp_id: paymentResponse?.id,
+                    mp_order_id: paymentResponse?.order_id,
+                    mp_status: paymentResponse?.status,
+                    mp_status_detail: paymentResponse?.status_detail,
                     ...(isPix && {
                         qr_code: qrCode,
                         qr_code_base64: qrCodeBase64,
@@ -189,20 +259,53 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
     async getWebhookActionAndData(
         payload: ProviderWebhookPayload["payload"]
     ): Promise<WebhookActionResult> {
-        const { data } = payload
-        const action = data?.action as string || "payment.updated"
+        const { data } = payload as any;
+        const resourceType = data?.type as string; // 'payment' ou 'order'
+        const resourceId = data?.data?.id as string;
+
+        if (!resourceId) {
+            return { action: "not_supported" }
+        }
+
+        let mpStatus = "";
+        let externalReference = "unknown";
+        let amountVal = 0;
 
         try {
-            const amountVal = Number(data?.total_amount) || Number(data?.transaction_amount) || 0;
-            // No v2, WebhookActionResult exige session_id e amount para ações válidas 
+            if (resourceType === "order") {
+                const response = await this.orderClient.get({ id: resourceId });
+                const payment = response.transactions?.payments?.[0];
+                mpStatus = payment?.status || response.status || "";
+                amountVal = Number(response.total_amount) || 0;
+                externalReference = response.external_reference || "unknown";
+            } else if (resourceType === "payment") {
+                const url = `https://api.mercadopago.com/v1/payments/${resourceId}`;
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${this.accessToken}` } }).then(res => res.json());
+                mpStatus = response.status;
+                amountVal = Number(response.transaction_amount) || 0;
+                externalReference = response.external_reference || "unknown";
+            } else {
+                return { action: "not_supported" }
+            }
+
+            let action: WebhookActionResult["action"] = "not_supported";
+            if (mpStatus === 'approved' || mpStatus === 'accredited') {
+                action = "authorized";
+            } else if (mpStatus === 'cancelled' || mpStatus === 'refunded') {
+                action = "canceled";
+            } else if (mpStatus === 'rejected') {
+                action = "failed";
+            }
+
             return {
-                action: action === "payment.updated" || action === "payment.created" ? "authorized" : "failed",
+                action,
                 data: {
-                    session_id: (data?.id as string) || "unknown",
+                    session_id: externalReference,
                     amount: new BigNumber(amountVal)
                 }
             }
-        } catch (e) {
+        } catch (error: any) {
+            this.logger.error(`[MercadoPago] Error fetching webhook resource details: ${error.message}`);
             return {
                 action: "failed",
                 data: { session_id: "error", amount: new BigNumber(0) }
@@ -239,9 +342,87 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
         }
     }
 
-    async capturePayment(input: CapturePaymentInput): Promise<CapturePaymentOutput> { return { data: input.data || {} } }
+    async capturePayment(input: CapturePaymentInput): Promise<CapturePaymentOutput> {
+        const orderId = input.data?.mp_order_id as string
+        if (!orderId) {
+            throw new MedusaError(MedusaError.Types.INVALID_DATA, "mp_order_id not found in payment data")
+        }
+
+        try {
+            // Utiliza idempotency key para evitar captura duplicada
+            const idempotencyKey = `capture_${orderId}_${Date.now()}`
+
+            const url = `https://api.mercadopago.com/v1/orders/${orderId}/capture`
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${this.accessToken}`,
+                    "X-Idempotency-Key": idempotencyKey
+                }
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                this.logger.error(`[MercadoPago] Capture Order Error: ${JSON.stringify(errorData)}`)
+                throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, `Failed to capture MP order: ${response.statusText}`)
+            }
+
+            const responseData = await response.json()
+
+            return {
+                data: {
+                    ...input.data,
+                    mp_capture_status: responseData.status,
+                    mp_capture_detail: responseData.status_detail
+                }
+            }
+        } catch (error: any) {
+            this.logger.error(`[MercadoPago] Error in capturePayment: ${error.message}`)
+            throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, `Error capturing payment: ${error.message}`)
+        }
+    }
+
     async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> { return { data: input.data || {} } }
-    async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> { return { data: input.data || {} } }
+    async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> {
+        const orderId = input.data?.mp_order_id as string
+        if (!orderId) {
+            return { data: input.data || {} }
+        }
+
+        try {
+            const idempotencyKey = `cancel_${orderId}_${Date.now()}`
+
+            const url = `https://api.mercadopago.com/v1/orders/${orderId}/cancel`
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${this.accessToken}`,
+                    "X-Idempotency-Key": idempotencyKey
+                }
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                this.logger.error(`[MercadoPago] Cancel Order Error: ${JSON.stringify(errorData)}`)
+                throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, `Failed to cancel MP order: ${response.statusText}`)
+            }
+
+            const responseData = await response.json()
+
+            return {
+                data: {
+                    ...input.data,
+                    mp_cancel_status: responseData.status,
+                    mp_cancel_detail: responseData.status_detail
+                }
+            }
+        } catch (error: any) {
+            this.logger.error(`[MercadoPago] Error in cancelPayment: ${error.message}`)
+            throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, `Error canceling payment: ${error.message}`)
+        }
+    }
     async deletePayment(input: DeletePaymentInput): Promise<DeletePaymentOutput> { return { data: {} } }
     async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> { return input.data || {} }
     async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> { return { data: input.data || {} } }
