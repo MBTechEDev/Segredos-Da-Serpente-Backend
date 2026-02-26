@@ -46,7 +46,7 @@ export const POST = async (
             const { processPaymentWorkflow } = await import("@medusajs/core-flows")
 
             const actionAndData = await paymentModule.getWebhookActionAndData({
-                provider: "pp_mercadopago_mercadopago",
+                provider: "mercadopago_mercadopago",
                 payload: {
                     data: req.body as Record<string, unknown>,
                     rawData: req.body as unknown as string | Buffer,
