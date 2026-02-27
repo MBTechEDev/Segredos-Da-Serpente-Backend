@@ -1,0 +1,1 @@
+{"errors":[{"code":"property_value","message":"Invalid value for property","details":["'$.transactions.payments[0].payment_method.type' - value must be one of 'credit_card', 'debit_card', 'account_money', 'digital_currency'"]}]}

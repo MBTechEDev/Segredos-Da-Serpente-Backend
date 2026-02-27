@@ -1,0 +1,1 @@
+{"errors":[{"code":"property_type","message":"Incorrect type for property","details":["'$.transactions.payments[0].amount' - expected string, but got number","'$.total_amount' - expected string, but got number"]}]}

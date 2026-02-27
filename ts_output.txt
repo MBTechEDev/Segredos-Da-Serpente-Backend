@@ -1,0 +1,4 @@
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm.
+.medusa/types/policy-bindings.d.ts(30,5): error TS1131: Property or signature expected.
+.medusa/types/policy-bindings.d.ts(30,15): error TS1109: Expression expected.
+.medusa/types/policy-bindings.d.ts(44,1): error TS1128: Declaration or statement expected.
