@@ -62,7 +62,7 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
 
     private formatAmount(amount: any): string {
         const rawValue = typeof amount === "object" && "numeric" in amount ? amount.numeric : amount;
-        return (Number(rawValue) / 100).toFixed(2);
+        return Number(rawValue).toFixed(2);
     }
 
     async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
@@ -115,9 +115,8 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
                 paymentMethodConfig.type = "credit_card"
                 paymentMethodConfig.token = token
                 paymentMethodConfig.installments = Number(data?.installments) || 1
-                if (data?.issuer_id) {
-                    paymentMethodConfig.issuer_id = String(data.issuer_id)
-                }
+                // NOTA: A API /v1/orders não suporta a propriedade 'issuer_id' dentro de payment_method.
+                // O token gerado no frontend já carrega o contexto do banco emissor.
             } else {
                 paymentMethodConfig.type = "bank_transfer"
             }
@@ -179,10 +178,10 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
             }
 
             // A idempotency key do Medusa não muda por sessão. Se trocarmos informações no checkout 
-            // e tentarmos a mesma key, o Mercado Pago retorna 500 Internal Error.
-            // Aqui adicionamos o tamanho do body da requisição pra assinar a idempotência só para pedidos idênticos.
+            // e tentarmos a mesma key, o Mercado Pago retorna 500 Internal Error ou key_already_used.
+            // Para não travar seus testes de Frontend com o mesmo ID do carrinho, incluimos o Timestamp do clique final
             const payloadHash = Buffer.from(JSON.stringify(orderRequest.body)).toString('base64').substring(0, 10);
-            const finalIdempotencyKey = `${idempotencyKey}_${payloadHash}`
+            const finalIdempotencyKey = `${idempotencyKey}_${payloadHash}_${Date.now()}`
 
             orderRequest.requestOptions = {
                 idempotencyKey: finalIdempotencyKey
