@@ -27,6 +27,7 @@ import {
     ProviderWebhookPayload,
     WebhookActionResult
 } from "@medusajs/framework/types"
+
 import { MercadoPagoConfig, Order, Payment } from "mercadopago"
 
 type Options = {
@@ -45,8 +46,8 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
     protected mpClient: MercadoPagoConfig
     protected logger: Logger
     protected orderClient: Order
+
     protected paymentClient: Payment
-    protected accessToken: string
 
     constructor(container: InjectedDependencies, options: Options) {
         super(container, options)
