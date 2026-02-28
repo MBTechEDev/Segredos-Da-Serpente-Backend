@@ -211,10 +211,10 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
             }
 
             // Identificador de segurança do dispositivo
-            if (deviceId) {
-                // Para a API Order, inserimos o device_id no contexto de pagamento da transação
-                orderRequest.body.transactions.payments[0].device_id = deviceId;
-            }
+            // if (deviceId) {
+            //     // Para a API Order, inserimos o device_id no contexto de pagamento da transação
+            //     orderRequest.body.transactions.payments[0].device_id = deviceId;
+            // }
 
             // A idempotency key do Medusa não muda por sessão. Se trocarmos informações no checkout 
             // e tentarmos a mesma key, o Mercado Pago retorna 500 Internal Error ou key_already_used.
