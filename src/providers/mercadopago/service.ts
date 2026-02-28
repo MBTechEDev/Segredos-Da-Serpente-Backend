@@ -58,7 +58,6 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
         })
         this.orderClient = new Order(this.mpClient)
         this.paymentClient = new Payment(this.mpClient)
-        this.accessToken = options.accessToken
     }
 
     private formatAmount(amount: any): string {
