@@ -58,7 +58,6 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
         })
         this.orderClient = new Order(this.mpClient)
         this.paymentClient = new Payment(this.mpClient)
-        this.accessToken = options.accessToken
     }
 
     private formatAmount(amount: any): string {
@@ -155,11 +154,44 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
             let paymentResponse: any = {}
             let isOrder = true
 
+            // Analisar itens do array (passados ao criar a sessao de pagamento)
+            const rawItems = Array.isArray(data?.items) ? data.items : [];
+            const mpItems = rawItems.map((item: any) => {
+                const q = Number(item.quantity) || 1;
+                const unitPrice = item.unit_price !== undefined ? Number(item.unit_price) : Number(totalAmountStr);
+                return {
+                    title: item.title || "Produto Escuro",
+                    description: item.description || "Item do Carrinho",
+                    category_id: item.category_id || "others",
+                    quantity: q,
+                    unit_price: unitPrice.toFixed(2),
+                };
+            });
+
+            // Fallback caso a requisição do frontend venha sem itens
+            if (mpItems.length === 0) {
+                mpItems.push({
+                    title: "Pedido do Carrinho",
+                    description: "Total de compras",
+                    category_id: "others",
+                    quantity: 1,
+                    unit_price: Number(totalAmountStr).toFixed(2),
+                });
+            }
+
+            // Endereço e info adicionais
+            const shippingAddress = (context as any)?.shipping_address || {};
+            const cityName = shippingAddress.city || "São Paulo";
+            const zipCode = shippingAddress.postal_code || "01000-000";
+            const stateName = shippingAddress.province || "SP";
+            const registrationDate = (context as any)?.customer?.created_at ? new Date((context as any)?.customer?.created_at).toISOString() : new Date().toISOString();
+
             const orderRequest: any = {
                 body: {
                     type: "online",
                     external_reference: cartId,
                     total_amount: totalAmountStr,
+                    items: mpItems,
                     payer: {
                         email: customerEmail,
                         first_name: customerName,
@@ -177,6 +209,12 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
                     }
                 }
             }
+
+            // Identificador de segurança do dispositivo
+            // if (deviceId) {
+            //     // Para a API Order, inserimos o device_id no contexto de pagamento da transação
+            //     orderRequest.body.transactions.payments[0].device_id = deviceId;
+            // }
 
             // A idempotency key do Medusa não muda por sessão. Se trocarmos informações no checkout 
             // e tentarmos a mesma key, o Mercado Pago retorna 500 Internal Error ou key_already_used.
@@ -345,6 +383,31 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
         }
 
         try {
+            // Verifica o status do pedido antes de tentar a captura
+            const currentOrder = await (this.orderClient as any).get({ id: orderId });
+
+            const payment = currentOrder.transactions?.payments?.[0];
+            const mpStatus = payment?.status || currentOrder.status;
+
+            // Se for PIX ou já capturado automaticamente, retorna como já capturado
+            const isApproved = mpStatus === 'approved' || mpStatus === 'accredited' || currentOrder.status === 'processed';
+
+            if (isApproved) {
+                this.logger.info(`[MercadoPago] Payment for order ${orderId} is already captured/paid (${mpStatus}). Skipping capture request.`);
+                return {
+                    data: {
+                        ...input.data,
+                        mp_capture_status: mpStatus,
+                        mp_capture_detail: payment?.status_detail || currentOrder.status_detail
+                    }
+                }
+            }
+
+            const isPix = input.data?.payment_method_id === "pix" || input.data?.qr_code;
+            if (isPix) {
+                throw new MedusaError(MedusaError.Types.NOT_ALLOWED, "PIX payments are captured automatically and cannot be captured manually.");
+            }
+
             // Utiliza idempotency key para evitar captura duplicada
             const idempotencyKey = `capture_${orderId}_${Date.now()}`
 
@@ -358,13 +421,26 @@ export default class MercadoPagoProviderService extends AbstractPaymentProvider<
             return {
                 data: {
                     ...input.data,
-                    mp_capture_status: responseData.status,
-                    mp_capture_detail: responseData.status_detail
+                    mp_capture_status: (responseData as any).status,
+                    mp_capture_detail: (responseData as any).status_detail
                 }
             }
         } catch (error: any) {
-            this.logger.error(`[MercadoPago] Error in capturePayment: ${error.message}`)
-            throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, `Error capturing payment: ${error.message}`)
+            const apiResponse = error.response || error.api_response || error.cause?.response || error.cause?.api_response;
+            const errorDetails = {
+                message: error.message,
+                cause: error.cause?.message,
+                apiResponse: apiResponse,
+            };
+            this.logger.error(`[MercadoPago] Error in capturePayment: ${JSON.stringify(errorDetails)}`);
+
+            let nestedMessage = "Unknown error";
+            if (apiResponse && typeof apiResponse === "object") {
+                nestedMessage = apiResponse.message || apiResponse.error || JSON.stringify(apiResponse);
+            }
+
+            const errorMsg = nestedMessage !== "Unknown error" ? nestedMessage : (error.message || error.cause?.message || "Unknown error");
+            throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, `Error capturing payment: ${errorMsg}`)
         }
     }
 
