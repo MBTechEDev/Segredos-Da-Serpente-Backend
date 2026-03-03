@@ -8,10 +8,6 @@ export default async function orderPlacedHandler({
     event: { data },
     container,
 }: SubscriberArgs<{ id: string }>) {
-    console.log("==========================================")
-    console.log("🔥 SUBSCRIBER INVOCADO: order.placed -> ", data.id);
-    console.log("==========================================")
-
     try {
         const { result, errors } = await sendOrderConfirmationWorkflow(container)
             .run({
@@ -22,12 +18,10 @@ export default async function orderPlacedHandler({
             })
 
         if (errors?.length > 0) {
-            console.error("❌ Erros na execução do workflow de confirmação de pedido:", errors);
-        } else {
-            console.log("✅ Confirmação de pedido enviada com sucesso! Resultado:", result);
+            throw errors
         }
     } catch (err: any) {
-        console.error("❌ Exceção ao invocar o sendOrderConfirmationWorkflow:", err?.message || err)
+        throw err
     }
 }
 
