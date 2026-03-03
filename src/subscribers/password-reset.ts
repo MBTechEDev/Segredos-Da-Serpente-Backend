@@ -12,7 +12,6 @@ export default async function resetPasswordTokenHandler({
     } },
     container,
 }: SubscriberArgs<{ entity_id: string, token: string, actor_type: string }>) {
-    console.log("🔥 SUBSCRIBER INVOCADO: auth.password_reset -> ", email);
     const notificationModuleService = container.resolve(
         Modules.NOTIFICATION
     )
