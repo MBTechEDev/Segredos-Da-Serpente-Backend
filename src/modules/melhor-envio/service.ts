@@ -73,8 +73,6 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
             services: String(optionData.id) // ID do serviço (ex: "1" para PAC)
         }
 
-        console.log(`🚚 [Melhor Envio] Solicitando cotação para serviço ID: ${optionData.id}`);
-
         try {
             const rates = await this.client.calculate(payload);
 

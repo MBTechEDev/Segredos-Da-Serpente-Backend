@@ -8,14 +8,21 @@ export default async function orderPlacedHandler({
     event: { data },
     container,
 }: SubscriberArgs<{ id: string }>) {
-    console.log("🔥 SUBSCRIBER INVOCADO: order.placed -> ", data.id);
+    try {
+        const { result, errors } = await sendOrderConfirmationWorkflow(container)
+            .run({
+                input: {
+                    id: data.id
+                },
+                throwOnError: false // garante que pegamos erros via destruturação em V2
+            })
 
-    await sendOrderConfirmationWorkflow(container)
-        .run({
-            input: {
-                id: data.id
-            }
-        })
+        if (errors?.length > 0) {
+            throw errors
+        }
+    } catch (err: any) {
+        throw err
+    }
 }
 
 export const config: SubscriberConfig = {

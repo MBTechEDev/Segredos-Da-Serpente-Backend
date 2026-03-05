@@ -1,8 +1,6 @@
 import { Modules, ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 export default async function setupMelhorEnvio({ container }) {
-    console.log("🚀 Iniciando Setup com Auto-Criação (Tupi 1)...");
-
     const fulfillmentModule = container.resolve(Modules.FULFILLMENT);
     const stockLocationModule = container.resolve(Modules.STOCK_LOCATION);
     const salesChannelModule = container.resolve(Modules.SALES_CHANNEL);
@@ -21,7 +19,6 @@ export default async function setupMelhorEnvio({ container }) {
         let location;
 
         if (!locations || locations.length === 0) {
-            console.log(`⚠️ Local '${LOCATION_NAME}' não encontrado. Criando agora...`);
             location = await stockLocationModule.createStockLocations({
                 name: LOCATION_NAME,
                 address: {
@@ -31,10 +28,8 @@ export default async function setupMelhorEnvio({ container }) {
                     postal_code: "00000-000"
                 }
             });
-            console.log(`✅ Local '${LOCATION_NAME}' criado com sucesso!`);
         } else {
             location = locations[0];
-            console.log(`✅ Local existente encontrado: ${location.name}`);
         }
 
         // 2. Vincular Sales Channel (Garante visibilidade no checkout)
@@ -47,7 +42,6 @@ export default async function setupMelhorEnvio({ container }) {
                 [Modules.SALES_CHANNEL]: { sales_channel_id: salesChannels[0].id },
                 [Modules.STOCK_LOCATION]: { stock_location_id: location.id },
             }]);
-            console.log("🔗 Sales Channel vinculado.");
         }
 
         // 3. Configurar Fulfillment Set
@@ -69,7 +63,6 @@ export default async function setupMelhorEnvio({ container }) {
                     },
                 ],
             });
-            console.log("✅ Fulfillment Set criado.");
         }
 
         // 4. Vincular Localização ao Set e Provider
@@ -83,7 +76,6 @@ export default async function setupMelhorEnvio({ container }) {
                 [Modules.FULFILLMENT]: { fulfillment_provider_id: PROVIDER_ID },
             }
         ]);
-        console.log("🔗 Vínculos de Localização configurados.");
 
         // 5. Configurar Opções de Frete
         const serviceZone = fSet.service_zones[0];
@@ -108,11 +100,8 @@ export default async function setupMelhorEnvio({ container }) {
                     data: { id: opt.id_me },
                     type: { label: opt.name, code: opt.name.toLowerCase().replace(/\s/g, "-") }
                 });
-                console.log(`✨ Opção criada: ${opt.name}`);
             }
         }
-
-        console.log("🏁 Configuração concluída!");
 
     } catch (error) {
         console.error("🔥 Erro detalhado:", error);
