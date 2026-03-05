@@ -15,19 +15,22 @@ import { orderPlacedEmail } from "./emails/order-placed";
 import { userInvitedEmail } from "./emails/user-invited";
 import { passwordResetEmail } from "./emails/password-reset";
 import { customerCreatedEmail } from "./emails/customer-created";
+import { orderShippedEmail } from "./emails/order-shipped";
 
 enum Templates {
     ORDER_PLACED = "order-placed",
     USER_INVITED = "user-invited",
     PASSWORD_RESET = "password-reset",
     CUSTOMER_CREATED = "customer-created",
+    ORDER_SHIPPED = "order-shipped",
 }
 
 const templates: { [key in Templates]?: (props: unknown) => React.ReactNode } = {
     [Templates.ORDER_PLACED]: orderPlacedEmail,
     [Templates.USER_INVITED]: userInvitedEmail,
     [Templates.PASSWORD_RESET]: passwordResetEmail,
-    [Templates.CUSTOMER_CREATED]: customerCreatedEmail
+    [Templates.CUSTOMER_CREATED]: customerCreatedEmail,
+    [Templates.ORDER_SHIPPED]: orderShippedEmail
 }
 
 type ResendOptions = {
@@ -101,6 +104,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                 return "Reset Your Password"
             case Templates.CUSTOMER_CREATED:
                 return "Bem-vindo aos Segredos da Serpente"
+            case Templates.ORDER_SHIPPED:
+                return "Aviso de Envio: Seu pacote está a caminho!"
             default:
                 return "New Email"
         }
