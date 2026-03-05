@@ -23,8 +23,10 @@ export default async function inviteCreatedHandler({
         }
     })
 
-    const backend_url = config.admin.backendUrl !== "/" ? config.admin.backendUrl :
-        "http://localhost:9000"
+    const backendUrl = config.admin?.backendUrl && config.admin.backendUrl !== "/"
+        ? config.admin.backendUrl
+        : process.env.ADMIN_CORS || "https://api.segredosdaserpente.cloud"
+
     const adminPath = config.admin.path
 
     await notificationModuleService.createNotifications({
@@ -32,7 +34,7 @@ export default async function inviteCreatedHandler({
         template: "user-invited",
         channel: "email",
         data: {
-            invite_url: `${backend_url}${adminPath}/invite?token=${invite.token}`,
+            invite_url: `${backendUrl}${adminPath}/invite?token=${invite.token}`,
         }
     })
 }

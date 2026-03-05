@@ -24,7 +24,7 @@ export default async function resetPasswordTokenHandler({
     } else {
         const backendUrl = config.admin?.backendUrl && config.admin.backendUrl !== "/"
             ? config.admin.backendUrl
-            : process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
+            : process.env.ADMIN_CORS || "https://api.segredosdaserpente.cloud"
         const adminPath = config.admin?.path || "/app"
         urlPrefix = `${backendUrl}${adminPath}`
     }
