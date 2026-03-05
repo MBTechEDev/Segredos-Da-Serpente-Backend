@@ -74,8 +74,9 @@ function OrderShippedEmailComponent({ order, tracking_numbers, tracking_urls }: 
 
                                     {tracking_numbers.map((code, index) => {
                                         const url = tracking_urls && tracking_urls[index];
+                                        const isLast = index === tracking_numbers.length - 1;
                                         return (
-                                            <Section key={code} className="mb-4 last:mb-0">
+                                            <Section key={code} className={isLast ? "mb-0" : "mb-4"}>
                                                 <Text className="text-white text-[18px] font-mono tracking-[4px] bg-[#000] p-2 inline-block rounded border border-white/5">
                                                     {code}
                                                 </Text>
