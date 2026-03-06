@@ -48,7 +48,7 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
 
         // Type Guard: Garante que os CEPs existam e limpa caracteres não numéricos
         if (!shipping_address?.postal_code || !from_location?.address?.postal_code) {
-            return { calculated_amount: 0, is_calculated_price_tax_inclusive: false }
+            return { calculated_amount: 0, is_calculated_price_tax_inclusive: false, delivery_range: null, company: null }
         }
 
         const fromPostalCode = from_location.address.postal_code.replace(/\D/g, '')
@@ -76,7 +76,7 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
         try {
             const rates = await this.client.calculate(payload);
 
-            // ... (lógica de selectedRate igual ao anterior)
+            // Encontra a cotação correspondente ao serviço selecionado
             let selectedRate: any = null;
             if (Array.isArray(rates)) {
                 selectedRate = rates.find((r: any) => String(r.id) === String(optionData.id));
@@ -99,12 +99,14 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
                 );
             }
 
-            // CORREÇÃO DE ESCALA MANTIDA:
+            // CORREÇÃO DE ESCALA MANTIDA: Medusa trabalha com float em R$
             const finalPrice = parseFloat(selectedRate.price);
 
             return {
                 calculated_amount: finalPrice,
-                is_calculated_price_tax_inclusive: true
+                is_calculated_price_tax_inclusive: true,
+                delivery_range: selectedRate.delivery_range ?? null,
+                company: selectedRate.company?.name ?? null
             }
 
         } catch (error: any) {
