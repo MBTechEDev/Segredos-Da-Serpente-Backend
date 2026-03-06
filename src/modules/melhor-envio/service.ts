@@ -24,8 +24,8 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
         return [
             { id: "1", name: "Correios PAC" },
             { id: "2", name: "Correios SEDEX" },
-            { id: "17", name: "Jadlog Package" },
-            { id: "18", name: "Jadlog .COM" }
+            { id: "12", name: "Buslog" },
+            { id: "31", name: "Loggi Express" }
         ]
     }
 
