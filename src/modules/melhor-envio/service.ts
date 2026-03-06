@@ -48,7 +48,7 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
 
         // Type Guard: Garante que os CEPs existam e limpa caracteres não numéricos
         if (!shipping_address?.postal_code || !from_location?.address?.postal_code) {
-            return { calculated_amount: 0, is_calculated_price_tax_inclusive: false, delivery_range: null, company: null }
+            return { calculated_amount: 0, is_calculated_price_tax_inclusive: false, delivery_range: null, company: null } as any
         }
 
         const fromPostalCode = from_location.address.postal_code.replace(/\D/g, '')
@@ -91,7 +91,6 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
              */
             if (!selectedRate || selectedRate.error) {
                 const errorMessage = selectedRate?.error || 'Serviço não retornado pela transportadora';
-                console.warn(`⛔ [Melhor Envio] Bloqueando seleção do serviço ${optionData.id}: ${errorMessage}`);
 
                 throw new MedusaError(
                     MedusaError.Types.INVALID_DATA,
@@ -107,7 +106,7 @@ class MelhorEnvioProviderService extends AbstractFulfillmentProviderService {
                 is_calculated_price_tax_inclusive: true,
                 delivery_range: selectedRate.delivery_range ?? null,
                 company: selectedRate.company?.name ?? null
-            }
+            } as any
 
         } catch (error: any) {
             // Se o erro já for do tipo MedusaError (lançado acima), apenas repassamos
