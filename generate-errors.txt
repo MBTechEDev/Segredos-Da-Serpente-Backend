@@ -1,0 +1,25 @@
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm.
+[32minfo[39m:    No link to load from C:\Users\mbtec\Documents\MB Tecnologia & Desenvolvimento\Segredos Da Serpente\segredos-da-serpente\node_modules\@medusajs\draft-order\.medusa\server\src\links. skipped.
+[32minfo[39m:    Generating migrations...
+[32minfo[39m:    
+[31merror[39m:   Service feedback was not found. If this is your module, make sure you set isQueryable to true in medusa-config.js:
+        
+feedback: {
+  // ...
+  definition: {
+    isQueryable: true
+  }
+}
+Error: Service feedback was not found. If this is your module, make sure you set isQueryable to true in medusa-config.js:
+        
+feedback: {
+  // ...
+  definition: {
+    isQueryable: true
+  }
+}
+    at register (C:\Users\mbtec\Documents\MB Tecnologia & Desenvolvimento\Segredos Da Serpente\segredos-da-serpente\node_modules\@medusajs\utils\src\modules-sdk\define-link.ts:259:13)
+    at MedusaApp_ (C:\Users\mbtec\Documents\MB Tecnologia & Desenvolvimento\Segredos Da Serpente\segredos-da-serpente\node_modules\@medusajs\modules-sdk\src\medusa-app.ts:497:30)
+    at async MedusaAppMigrateGenerate (C:\Users\mbtec\Documents\MB Tecnologia & Desenvolvimento\Segredos Da Serpente\segredos-da-serpente\node_modules\@medusajs\modules-sdk\src\medusa-app.ts:741:34)
+    at async MedusaAppLoader.runModulesMigrations (C:\Users\mbtec\Documents\MB Tecnologia & Desenvolvimento\Segredos Da Serpente\segredos-da-serpente\node_modules\@medusajs\framework\src\medusa-app-loader.ts:194:7)
+    at async main (C:\Users\mbtec\Documents\MB Tecnologia & Desenvolvimento\Segredos Da Serpente\segredos-da-serpente\node_modules\@medusajs\medusa\src\commands\db\generate.ts:47:5)
