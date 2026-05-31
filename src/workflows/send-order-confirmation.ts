@@ -73,7 +73,9 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
 
             // CASO 2: Não é PIX (ex: Cartão aprovado) OU PIX que acabou de ser pago -> Envia confirmação padrão
             return [{
+                from: 'nao-responda@segredosdaserpente.com.br',
                 to: orderObj.email,
+                bcc: ['contato@segredosdaserpente.com.br'],
                 channel: "email",
                 template: "order-placed",
                 data: { order: orderObj }
